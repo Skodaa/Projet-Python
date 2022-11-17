@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ICalendarCreator//NONSGML//EN
+BEGIN:VEVENT
+DTSTART:20221114T160000
+DTEND:20221114T170000
+SUMMARY:Creating the futur
+LOCATION:at home
+DESCRIPTION:Well I'm just doing the futur and I am writting things like I don't care booboo this is funny isn't it ?
+END:VEVENT
+BEGIN:VEVENT
+DTSTART:20221115T110000
+DTEND:20221115T180000
+SUMMARY:Regretting
+LOCATION:at home
+DESCRIPTION:Well now I regret
+END:VEVENT
+END:VCALENDAR
