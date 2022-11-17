@@ -3,7 +3,7 @@
 
     @author VOLQUARDSEN Alex
     @since 13/11/2022
-    @version 1.0.2
+    @version 1.0.3
 """
 
 from classes import items
@@ -21,7 +21,7 @@ def main()->None:
         # Si l'argument '1' n'existe pas retourne une erreur 
         arg1:str = str(sys.argv[1]) 
 
-        if(arg1 == "-h"): # Si l'argument '1' est '-h' alors on appel la fonction d'aide
+        if((arg1 == "-h") or (arg1 == "-help")): # Si l'argument '1' est '-h' alors on appel la fonction d'aide
 
             item.help()
 
@@ -41,7 +41,10 @@ def main()->None:
             try:
                 path = sys.argv[2]
                 item.path = path
-                item.read_ics(path)
+                if(".ics" in path):
+                    calendar:list = item.get_content_ics(path)
+                    item.affiche_ics(calendar)
+
 
             except:
                 #si jamais l'argument '2' n'est pas bon, on retourne une erreur

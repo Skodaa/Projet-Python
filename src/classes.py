@@ -4,7 +4,7 @@
 
     @author VOLQUARDSEN Alex
     @since 13/11/2022
-    @version 1.0.2
+    @version 1.0.3
 
 
 """
@@ -25,6 +25,7 @@ import pytz
 ## CONSTANTES ##
 
 ARG_LEN = len(sys.argv)
+LINE = 70
 
 ## VARIABLES GLOBAL ##
 
@@ -36,7 +37,7 @@ etage_actuel:bool = True
 ##
 # Classe contenant les opérations à effectuer sur les fichiers ics
 #
-# @version 1.0.1
+# @version 1.0.2
 # @since 13/11/2022
 class items:
 
@@ -112,58 +113,26 @@ class items:
     # @param end : la fin de l'evenement
     # @param location : l'endroit ou se passe l'évenement
     # @param description : la description de l'evenement
-    def affiche_ics(self,summary:str, start:str, end:str, location:str, description:str)->None:
+    def affiche_ics(self,liste:list)->None:
 
-        line:str = "-" * 50
-        line = line + "\n"
+        line:str = "-" * LINE
 
-        print(line)
-        if(summary != None):
-            sum_line = f"|  Titre : {summary}  |"
-            print(sum_line)
-        else:
-            pass
-        if(start != None):
+        for elements in liste:
+            print(line)
 
-            start_line:str = f"|  start time : {start}  |"
-            print(start_line)
-        else:
-            pass
-        if(end != None):
+            for items in elements :
+                print(items)   
 
-            end_line:str = f"|  end time : {end}   |"
-            print(end_line)
-        else:
-            pass
-        if(location != None):
-            location_line = f"|  location : {location}  |"
-            print(location_line)
-        else:
-            pass
-        if(description != None):
-            description_line = f"|  description : {description}  |"
-            print(description_line)
-            """if(len(description_line) >= 100):
-                split_ind:int = len(description_line)/2
-                first:str = description_line[::split_ind]
-                last:str = description_line[split_ind::]
-                print(f"{first}\n{last}")
-            else:
-                print(description_line)
-                pass"""
-        else:
-            pass
-        print(line)
+            print(line)
         
 
-
     ##
-    # Fonction permettant de lire le contenu un fichier .ics
+    # Fonction récuperant le contenue des évenements d'un icalendar
     # @param path : le fichier que l'on souhaite afficher
-    def read_ics(self,path:str)->None:
+    def get_content_ics(self,path:str)->list:
 
-        if(path == None):
-            path = self.path
+        element:list = []
+        res:list = []
 
         print(f"reading {path}\n")
         opened:bool = False
@@ -176,19 +145,36 @@ class items:
 
                 if( (event == "VEVENT") and (opened == False)):
                     opened = True
-                    summary:str = component.get("SUMMARY")
+                    summary:str = "|  Event : " + component.get("SUMMARY")
                     start:str = component.decoded("DTSTART")
+                    if("+" in str(start)):
+                        list_s = str(start).split("+")
+                        start = list_s[0]                        
+                    start = f"\n|  start on : {start}"
                     end:str = component.decoded("DTEND")
-                    location:str = component.get("LOCATION")
-                    descritpion:str = component.get("DESCRIPTION")
+                    if("+" in str(end)):
+                        list_e = str(end).split("+")
+                        end = list_e[0]  
+                    end = f"|  ending on : {end}\n"
+                    if(component.get("LOCATION") != ""):
+                        location:str = "|  location : "+component.get("LOCATION") + "\n"
+                    else:
+                        location:str = "|  location : Not specified"
+                    if(component.get("DESCRIPTION") != ""):
+                        descritpion:str = "|  description : "+component.get("DESCRIPTION")
+                    else:
+                        descritpion:str = "|  description : No description specified"
 
                 is_ended:str = component.name
-
                 if((is_ended == "VEVENT") and (opened == True)):
-                    opened = False
-                    self.affiche_ics(summary,start,end,location,descritpion)
-                    
+                    opened = False 
+                    element = [summary,start,end,location,descritpion]
+                    res.append(element)
+
+                elif(is_ended != "VEVENT"):
+                    pass 
                 else:
                     print("\u001b[31m Erreur ! Votre fichier contient surement une erreur \u001b[37m")
                     exit
 
+        return res
