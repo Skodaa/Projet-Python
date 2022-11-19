@@ -17,6 +17,7 @@ from icalendar import Calendar, Event, vCalAddress, vText
 from datetime import datetime
 from pathlib import Path
 import pytz
+import csv
 
 
 
@@ -155,13 +156,13 @@ class items:
                     if("+" in str(end)):
                         list_e = str(end).split("+")
                         end = list_e[0]  
-                    end = f"|  ending on : {end}\n"
+                    end = f"\n|  ending on : {end}"
                     if(component.get("LOCATION") != ""):
-                        location:str = "|  location : "+component.get("LOCATION") + "\n"
+                        location:str = "\n|  location : "+component.get("LOCATION")
                     else:
                         location:str = "|  location : Not specified"
                     if(component.get("DESCRIPTION") != ""):
-                        descritpion:str = "|  description : "+component.get("DESCRIPTION")
+                        descritpion:str = "\n|  description : "+component.get("DESCRIPTION")
                     else:
                         descritpion:str = "|  description : No description specified"
 
@@ -178,3 +179,106 @@ class items:
                     exit
 
         return res
+
+    ##
+    # Fonction permettant de créer un fragment HTML contenant les VEVENT d'un fichier ics et les écrit dans un fichier
+    # @param liste : l'ensemble des éléments des VEVENT
+    # @param 
+    def fragment_ics(self,liste:list,file:str)->None:
+        """
+        Format d'un fragment VEVENT utilisé :
+
+        <div class="vevent">
+        <div class="summary">Summary</div>
+        <abbr class="dtstart" title="20070824">date</abbr> - 
+        <abbr class="dtend" title="20070827">date</abbr>
+        <div class="location">adresse</div>
+        <div class="description">description</div>
+        </div>
+        """
+        
+        with open(file, 'a+', encoding='utf-8') as frag:
+            
+            i:int = 0
+            trait:str = "-" * 40
+
+            for elements in liste:
+                
+                for items in elements :
+                    
+                    match i :
+                        case 0:
+                            line:str = f"<p>{trait}<p>"
+                            line = f"{line}\n<div class=\"vevent\">\n<div class=\"summary\">{items}</div>\n"
+                            frag.write(line)
+                            i += 1
+                        case 1:
+                            line = f"\t<abbr class=\"dtstart\"> {items} </abbr>\n"
+                            frag.write(line)
+                            i += 1
+                        case 2:
+                            line = f"\t<abbr class=\"dtend\"> {items} </abbr>\n"
+                            frag.write(line)
+                            i += 1
+                        case 3 :
+                            line = f"\t<div class=\"location\">{items}</div>\n"
+                            frag.write(line)
+                            i += 1
+                        case 4:
+                            line = f"\t<div class=\"description\">{items}</div>\n</div>\n"
+                            frag.write(line)
+                            i = 0
+
+    ##
+    # Fonction permettant d'écrire les evenements dans un fichier csv
+    # @param liste : la liste des évenements à rentrer dans le csv
+    # @param file : le csv que l'on veut remplir
+    def csv_ics(self,liste:list,file:str)->None:
+
+        """
+        Format du csv :
+
+        summary,start,end,location,description
+        """
+
+        file_exist:bool = os.path.exists(file)
+
+        with open(file, 'a+', encoding='UTF-8', newline='') as file:
+
+            writer = csv.writer(file)
+
+            if file_exist == False :
+                header:list = ["summary","start","end","location","description"]
+                print(header)
+                writer.writerow(header)
+
+            for elements in liste:
+
+                row:list = []
+
+                for items in elements:
+                    splitter:str = items.split(" : ")
+                    obj = splitter[1]
+                    print(obj)
+                    row.append(obj)
+                writer.writerow(row)
+
+
+    ##
+    # Fonction qui va créer un squelette de page html contenant les fragments html des évenements
+    # @param liste : liste des éléments contenue dans les évenements
+    # @param file : la page qui sera créer
+    def page_ics(self,liste:list,file:str)->None:
+
+        heading:str = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n\t<meta charset=\"utf-8\">\n\t<title>évenements de votre calendrier</title>\n</head>\n<body>"
+        ending:str = "</body>\n</html>"
+
+        with open(file, 'a+', encoding='UTF-8') as page:
+
+            page.write(heading)
+        
+        self.fragment_ics(liste,file)
+
+        with open(file, 'a', encoding='UTF-8') as page:
+            page.write(ending)
+

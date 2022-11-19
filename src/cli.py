@@ -42,8 +42,25 @@ def main()->None:
                 path = sys.argv[2]
                 item.path = path
                 if(".ics" in path):
-                    calendar:list = item.get_content_ics(path)
-                    item.affiche_ics(calendar)
+
+                    if(len(sys.argv)==5):
+                        commande:str = sys.argv[3]
+            
+                        if(commande =="-h"):
+                            calendar:list = item.get_content_ics(path)
+                            filename:str = sys.argv[4]
+                            if(".html" in filename):
+                                item.fragment_ics(calendar,filename)
+                            elif(".csv" in filename):
+                                item.csv_ics(calendar,filename)
+                        elif(commande == "-p"):
+                            calendar:list = item.get_content_ics(path)
+                            filename:str = sys.argv[4]
+                            item.page_ics(calendar,filename)
+                                
+                    else:
+                        calendar:list = item.get_content_ics(path)
+                        item.affiche_ics(calendar)
 
 
             except:
