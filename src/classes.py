@@ -43,10 +43,16 @@ etage_actuel:bool = True
 class items:
 
     ##
-    # Constructeur de la classe ics
+    # Constructeur de la classe items (nom random parce que je ne savais pas comment la nommer)
     # @param file_path : le chemin du fichier que l'on va traiter
     def __init__(self, file_path):
         self.path = file_path
+        
+    """
+                    *********************************
+                    ********* TRONC COMMUN **********
+                    *********************************
+    """
 
     ##
     # Fonction permettant d'afficher l'aide et les fonctionnalités du programme
@@ -106,15 +112,10 @@ class items:
                 self.list_files(temp_dir,etage+1)
                 continue
 
-
     ##
-    # Fonction permettant d'afficher le contenue du fichier ics
-    # @param summary : le titre de l'evenement
-    # @param start : le début de l'evenement
-    # @param end : la fin de l'evenement
-    # @param location : l'endroit ou se passe l'évenement
-    # @param description : la description de l'evenement
-    def affiche_ics(self,liste:list)->None:
+    # Fonction permettant d'afficher le contenue d'un fichier à l'aide de la liste obtenue dans la fonction get_content
+    # @param liste : la liste des elements à afficher
+    def afficher(self,liste:list)->None:
 
         line:str = "-" * LINE
 
@@ -126,6 +127,15 @@ class items:
 
             print(line)
         
+
+
+
+    """
+                    *********************************
+                    ********** PARTIE ICS ***********
+                    *********************************    
+    """
+
 
     ##
     # Fonction récuperant le contenue des évenements d'un icalendar
@@ -183,7 +193,7 @@ class items:
     ##
     # Fonction permettant de créer un fragment HTML contenant les VEVENT d'un fichier ics et les écrit dans un fichier
     # @param liste : l'ensemble des éléments des VEVENT
-    # @param 
+    # @param file : le fichier dans lequel on écrit le fragment
     def fragment_ics(self,liste:list,file:str)->None:
         """
         Format d'un fragment VEVENT utilisé :
@@ -282,3 +292,224 @@ class items:
         with open(file, 'a', encoding='UTF-8') as page:
             page.write(ending)
 
+    """
+                    *********************************
+                    ********** PARTIE VCF ***********
+                    *********************************    
+    """
+
+
+    ##
+    # Fonction permettant de récuperer les informations dans un fichier vcf
+    # @param path : le fichier que l'on veut ouvrir
+    def get_content_vcf(self,path:str)->list:
+
+        """
+        Format de vcard que l'on veut récupérer : 
+
+        N: name 
+        FN : fullname
+        ORG : organisation he/she works for
+        TITLE : job he/she's doing 
+        NICKNAME : nickname of the sb
+        GENDER : the gender
+        BDAY : birthday date
+        EMAIL : personal email
+        EMAIL : work email
+        TEL : cellphone of the sb
+        TEL : work phone
+        ADR : home adress
+        ADR : work adress       
+        """
+
+        element:list = []
+        res:list = []
+
+        is_opened:bool = False
+
+        print(f" reading : {path}\n")
+
+        with open(path, 'rb') as file:
+            
+            for lines in file:
+
+                decoded = lines.decode('utf-8')
+                ini_split = decoded.split("\r")
+                proper_line = ini_split[0]
+                
+                if('BEGIN:VCARD' in proper_line):
+                    is_opened = True
+                    nom:str = "nom : non renseigner"
+                    prenom:str = "prenom : non renseigner"
+                    second_prenom:str = "second prenom : non renseigner"
+                    gender:str = "genre : sac wallmart"
+                    nickname:str = "surnom : non renseigner"
+                    organisation:str = "entreprise : non renseigner"
+                    title:str = "emploi : non renseigner"
+                    birthday:str = "date de naissance : non renseigner"
+                    email_home:str = "email privee : non renseigner"
+                    email_work:str = "email pro : non renseigner"
+                    work_phone:str = "numéro pro : non renseigner"
+                    personal_phone:str = "numéro privé : non renseigner"
+                    adr_home:str = "adresse : non renseigner"
+                    adr_work:str = "lieu de travail : non renseinger"
+
+                elif((is_opened == True)and not("END:VCARD" in proper_line)):
+                    splitter:list = proper_line.split(":")
+                    line = splitter[0]
+                    if((line.startswith("N;"))or(line.startswith("N:"))):
+                        line = splitter[1]
+                        if(";" in line):
+                            resplitter:list = line.split(";")
+                        else:
+                            resplitter:list = line.split(" ")
+                        nom = f"\nnom : {resplitter[0]}"
+                        prenom = f"\nprenom : {resplitter[1]}"
+                        if(len(resplitter)>3):
+                            second_prenom = f"\nsecond prenom : {resplitter[2]}"
+                            gender = f"\ngender : {resplitter[3]}"
+                        else:
+                            gender = f"\ngender : {resplitter[2]}"
+                    elif("NICKNAME" in line):
+                        nickname = f"\nnickname : {splitter[1]}"
+                    elif("GENDER" in line):
+                        gender = f"\ngender : {splitter[1]}"
+                    elif("ORG" in line):
+                        organisation = f"\nentreprise : {splitter[1]}"
+                    elif("TITLE" in line):
+                        title = f"\nemploi : {splitter[1]}"
+                    elif("BDAY" in line):
+                        birthday = f"\ndate de naissance : {splitter[1]}"
+                    elif("EMAIL" in line):
+                        if("HOME" in line):
+                            email_home = f"\nemail perso : {splitter[1]}"
+                        elif("WORK" in line):
+                            email_work = f"\nemail pro : {splitter[1]}"
+                    elif("TEL" in line):
+                        if("WORK" in line):
+                            work_phone = f"\ntelephone pro : {splitter[1]}"
+                        elif(("HOME" in line )or ("CELL" in line)):
+                            personal_phone = f"\ntelephone privee : {splitter[1]}"
+                    elif("ADR" in line):
+                        adr = splitter[1]
+                        adr = adr.replace(";" , " ")
+                        if("HOME" in line):
+                            adr_home = f"\nadresse : {adr}"
+                        elif("WORK" in line):
+                            adr_work = f"\nlieu de travail : {adr}"
+                
+                elif("END:VCARD" in proper_line):
+                    is_opened = False
+                    element = [nom,prenom,second_prenom,gender,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work]
+                    res.append(element)
+                else:
+                    pass
+        return res
+
+
+    ##
+    # Fonction permettant de créer un fragment HTML contenant les Vcard d'un fichier vcf et les écrit dans un fichier donné en argument
+    # @param liste : l'ensemble des éléments des vcard
+    # @param file : le fichier dans lequel on écrit le fragment
+    def fragment_vcf(self,liste:list,file:str)->None:
+        """
+        Format d'un fragment vcard utilisé :
+
+        <div class="vcard">
+            <div class="fn">Full name</div>
+            <div class="gender"> gender </div>
+            <div class="nickname">nickname</div>
+            <div class="org">organisation</div>
+            <div class="title">title</div>
+            <div class="bday">date</div>
+            <div class="email_pro">email</div>
+            <div class="email_private">email</div>
+            <div class="phone_pro">phone</div>
+            <div class="phone_private>phone</div>
+            <div class="adr_pro">adresse</div>
+            <div class="adr_private>adresse</div>
+        </div>
+        """
+        
+        with open(file, 'a+', encoding='utf-8') as frag:
+            
+            trait:str = "-" * 40
+
+
+            for elements in liste:
+
+                i:int = 0
+                size:int = len(elements)
+                temp_list:list = []
+                
+                while(i < size):
+                    temp:list = elements[i].split(" : ")
+                    item:str = temp[1]
+                    temp_list.append(item)
+                    i += 1
+
+
+                line:str = f"<p>{trait}</p>\n<div class=\"vcard\">\n\t<div class=\"fn\">{temp_list[0]} {temp_list[1]} {temp_list[2]}"
+                line = f"{line}</div>\n\t<div class=\"gender\">{temp_list[3]}</div>\n\t<div class=\"nickname\">{temp_list[4]}</div>"
+                line = f"{line}\n\t<div class=\"org\">{temp_list[5]}</div>\n\t<div class=\"title\">{temp_list[6]}</div>"
+                line = f"{line}\n\t<div class=\"bday\">{temp_list[7]}</div>\n\t<div class=\"email_pro\">{temp_list[8]}</div>"
+                line = f"{line}\n\t<div class=\"email_private\">{temp_list[9]}</div>\n\t<div class=\"phone_pro\">{temp_list[10]}</div>"
+                line = f"{line}\n\t<div class=\"phone_private\">{temp_list[11]}</div>\n\t<div class=\"adr_pro\">{temp_list[12]}</div>"
+                line = f"{line}\n\t<div class=\"adr_private\">{temp_list[13]}</div>\n</div>"
+                
+                frag.write(line)
+            
+
+    ##
+    # Fonction permettant d'écrire les evenements dans un fichier csv
+    # @param liste : la liste des évenements à rentrer dans le csv
+    # @param file : le csv que l'on veut remplir
+    def csv_vcf(self,liste:list,file:str)->None:
+
+        """
+        Format du csv :
+
+        nom,prenom,second_prenom,gender,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work
+        """
+
+        file_exist:bool = os.path.exists(file)
+
+        with open(file, 'a+', encoding='UTF-8', newline='') as file:
+
+            writer = csv.writer(file)
+
+            if file_exist == False :
+                header:list = ["nom,prenom,second_prenom,gender,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work"]
+                print(header)
+                writer.writerow(header)
+
+            for elements in liste:
+
+                row:list = []
+
+                for items in elements:
+                    splitter:str = items.split(" : ")
+                    obj = splitter[1]
+                    print(obj)
+                    row.append(obj)
+                writer.writerow(row)
+
+
+    ##
+    # Fonction qui va créer un squelette de page html contenant les fragments html des évenements
+    # @param liste : liste des éléments contenue dans les évenements
+    # @param file : la page qui sera créer
+    def page_vcf(self,liste:list,file:str)->None:
+
+        heading:str = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n\t<meta charset=\"utf-8\">\n\t<title>évenements de votre calendrier</title>\n</head>\n<body>"
+        ending:str = "</body>\n</html>"
+
+        with open(file, 'a+', encoding='UTF-8') as page:
+
+            page.write(heading)
+        
+        self.fragment_vcf(liste,file)
+
+        with open(file, 'a', encoding='UTF-8') as page:
+            page.write(ending)
+                

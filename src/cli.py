@@ -60,8 +60,28 @@ def main()->None:
                                 
                     else:
                         calendar:list = item.get_content_ics(path)
-                        item.affiche_ics(calendar)
+                        item.afficher(calendar)
 
+                elif(".vcf" in path):
+
+                    if(len(sys.argv) == 5):
+                        commande:str = sys.argv[3]
+
+                        if(commande == "-h"):
+                            vcard:list = item.get_content_vcf(path)
+                            filename:str = sys.argv[4]
+                            if(".html" in filename):
+                                item.fragment_vcf(vcard,filename)
+                            elif(".csv" in filename):
+                                item.csv_vcf(vcard,filename)
+                                pass
+                        elif(commande == "-p"):
+                            vcard:list = item.get_content_vcf(path)
+                            filename:str = sys.argv[4]
+                            item.page_vcf(vcard,filename)
+                    else:
+                        vcard:list = item.get_content_vcf(path)
+                        item.afficher(vcard)
 
             except:
                 #si jamais l'argument '2' n'est pas bon, on retourne une erreur
