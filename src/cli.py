@@ -7,6 +7,8 @@
 """
 
 from classes import items
+from classes import ics
+from classes import vcf
 import sys
 import os
 
@@ -15,21 +17,21 @@ import os
 # Fonction ayant effet de main
 def main()->None:
 
-    item = items("")
-
     try:
         # Si l'argument '1' n'existe pas retourne une erreur 
         arg1:str = str(sys.argv[1]) 
 
         if((arg1 == "-h") or (arg1 == "-help")): # Si l'argument '1' est '-h' alors on appel la fonction d'aide
-
+            
+            item = items("")
             item.help()
 
         elif(arg1 == "-d"):
             
             try:
+                item = items("")
                 path = sys.argv[2]
-                item.path = path
+                item.path = os.path.abspath(path)
                 item.list_files(path,0)
             
             except:
@@ -40,8 +42,10 @@ def main()->None:
 
             try:
                 path = sys.argv[2]
-                item.path = path
                 if(".ics" in path):
+
+                    item = ics("")
+                    item.path = os.path.abspath(path)
 
                     if(len(sys.argv)==5):
                         commande:str = sys.argv[3]
@@ -63,6 +67,9 @@ def main()->None:
                         item.afficher(calendar)
 
                 elif(".vcf" in path):
+
+                    item = vcf("")
+                    item.path = os.path.abspath(path)
 
                     if(len(sys.argv) == 5):
                         commande:str = sys.argv[3]

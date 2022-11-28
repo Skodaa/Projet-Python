@@ -47,12 +47,6 @@ class items:
     # @param file_path : le chemin du fichier que l'on va traiter
     def __init__(self, file_path):
         self.path = file_path
-        
-    """
-                    *********************************
-                    ********* TRONC COMMUN **********
-                    *********************************
-    """
 
     ##
     # Fonction permettant d'afficher l'aide et les fonctionnalités du programme
@@ -129,15 +123,18 @@ class items:
         
 
 
-
     """
                     *********************************
                     ********** PARTIE ICS ***********
                     *********************************    
     """
 
+class ics(items):
 
-    ##
+    def __init__(self, file_path):
+        super().__init__(file_path)
+
+        ##
     # Fonction récuperant le contenue des évenements d'un icalendar
     # @param path : le fichier que l'on souhaite afficher
     def get_content_ics(self,path:str)->list:
@@ -292,11 +289,18 @@ class items:
         with open(file, 'a', encoding='UTF-8') as page:
             page.write(ending)
 
+
     """
                     *********************************
                     ********** PARTIE VCF ***********
                     *********************************    
     """
+
+
+class vcf(items):
+
+    def __init__(self, file_path):
+        super().__init__(file_path)
 
 
     ##
@@ -512,4 +516,3 @@ class items:
 
         with open(file, 'a', encoding='UTF-8') as page:
             page.write(ending)
-                
