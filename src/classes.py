@@ -113,13 +113,40 @@ class items:
 
         line:str = "-" * LINE
 
-        for elements in liste:
-            print(line)
+        if(len(liste[0]) == 5):
+            for elements in liste:
+                print(line)
 
-            for items in elements :
-                print(items)   
+                print(f"|  Event : {elements[0]}")
+                print(f"|  start on : {elements[1]}")
+                print(f"|  ending on : {elements[2]}")
+                print(f"|  location : {elements[3]}")
+                print(f"|  description : {elements[4]}")
 
-            print(line)
+
+                print(line)
+        elif(len(liste[0]) == 13):
+
+            for elements in liste:
+
+                print(line)
+
+                print(f"| nom : {elements[0]}")
+                print(f"| prenom : {elements[1]}")
+                print(f"| second_prenom : {elements[2]}")
+                print(f"| nickname : {elements[3]}")
+                print(f"| organisation : {elements[4]}")
+                print(f"| title : {elements[5]}")
+                print(f"| birthday : {elements[6]}")
+                print(f"| personnal email : {elements[7]}")
+                print(f"| work email : {elements[8]}")
+                print(f"| work phone : {elements[9]}")
+                print(f"| personnal phone : {elements[10]}")
+                print(f"| home address : {elements[11]}")
+                print(f"| work address : {elements[12]}")
+
+                print(line)
+
         
 
 
@@ -150,28 +177,27 @@ class ics(items):
             for component in ecal.walk():
 
                 event:str = component.name
-
                 if( (event == "VEVENT") and (opened == False)):
                     opened = True
-                    summary:str = "|  Event : " + component.get("SUMMARY")
+                    summary:str = component.get("SUMMARY")
                     start:str = component.decoded("DTSTART")
                     if("+" in str(start)):
                         list_s = str(start).split("+")
-                        start = list_s[0]                        
-                    start = f"\n|  start on : {start}"
+                        start = list_s[0] 
+                    start = start                     
                     end:str = component.decoded("DTEND")
                     if("+" in str(end)):
                         list_e = str(end).split("+")
                         end = list_e[0]  
-                    end = f"\n|  ending on : {end}"
+                    end = end
                     if(component.get("LOCATION") != ""):
-                        location:str = "\n|  location : "+component.get("LOCATION")
+                        location:str = component.get("LOCATION")
                     else:
-                        location:str = "|  location : Not specified"
+                        location:str = "Not specified"
                     if(component.get("DESCRIPTION") != ""):
-                        descritpion:str = "\n|  description : "+component.get("DESCRIPTION")
+                        descritpion:str = component.get("DESCRIPTION")
                     else:
-                        descritpion:str = "|  description : No description specified"
+                        descritpion:str = "No description specified"
 
                 is_ended:str = component.name
                 if((is_ended == "VEVENT") and (opened == True)):
@@ -215,7 +241,7 @@ class ics(items):
                     
                     match i :
                         case 0:
-                            line:str = f"<p>{trait}<p>"
+                            line:str = f"<p class=\"separator\">{trait}<p>"
                             line = f"{line}\n<div class=\"vevent\">\n<div class=\"summary\">{items}</div>\n"
                             frag.write(line)
                             i += 1
@@ -264,9 +290,7 @@ class ics(items):
                 row:list = []
 
                 for items in elements:
-                    splitter:str = items.split(" : ")
-                    obj = splitter[1]
-                    print(obj)
+                    obj = items
                     row.append(obj)
                 writer.writerow(row)
 
@@ -289,6 +313,54 @@ class ics(items):
         with open(file, 'a', encoding='UTF-8') as page:
             page.write(ending)
 
+
+    ##
+    # Fonction permettant de modifier le contenue d'un fichier ics
+    def modify_ics(self,liste:list,liste_replace:list,file:str,index:int)->None:
+        
+        size:int = len(liste)
+        i:int = 0
+        place:int = 0
+        opened:bool = False
+
+        for i in range(size):
+            
+            initial:str = liste[i]
+            after:str = liste_replace[i]
+
+            if(initial != after):
+
+                with open(file, 'r',encoding='UTF-8') as file_r:
+                    
+                    data = file_r.readlines()
+
+                    split:list = initial.split(":")
+                    temoi:str = split[0]
+                    init_word:str = split[1]
+                    split_end:list = after.split(":")
+                    temoi_end:str = split_end[0]
+                    end:str = split_end[1]
+                                                
+                    y:int = 0
+                    for y in range(len(data)):
+                        elements = data[y]
+                        if(elements.startswith("BEGIN:VEVENT")):
+                            place += 1
+                            opened = True
+                        if(elements.startswith("END:VEVENT")):
+                            opened = False
+                        if((place == index)and(opened == True)):
+                            if(init_word != end):
+                                if(elements.startswith(temoi)):
+                                    if(init_word == "Not specified"):
+                                        data[y] = f"{temoi_end}:{end}\n"
+                                    else:
+                                        data[y] = elements.replace(init_word,end)
+
+
+                with open(file, 'w', encoding='UTF-8') as file_w:
+
+                    file_w.write("".join(str(item) for item in data))
 
     """
                     *********************************
@@ -316,7 +388,6 @@ class vcf(items):
         ORG : organisation he/she works for
         TITLE : job he/she's doing 
         NICKNAME : nickname of the sb
-        GENDER : the gender
         BDAY : birthday date
         EMAIL : personal email
         EMAIL : work email
@@ -343,68 +414,64 @@ class vcf(items):
                 
                 if('BEGIN:VCARD' in proper_line):
                     is_opened = True
-                    nom:str = "nom : non renseigner"
-                    prenom:str = "prenom : non renseigner"
-                    second_prenom:str = "second prenom : non renseigner"
-                    gender:str = "genre : sac wallmart"
-                    nickname:str = "surnom : non renseigner"
-                    organisation:str = "entreprise : non renseigner"
-                    title:str = "emploi : non renseigner"
-                    birthday:str = "date de naissance : non renseigner"
-                    email_home:str = "email privee : non renseigner"
-                    email_work:str = "email pro : non renseigner"
-                    work_phone:str = "numéro pro : non renseigner"
-                    personal_phone:str = "numéro privé : non renseigner"
-                    adr_home:str = "adresse : non renseigner"
-                    adr_work:str = "lieu de travail : non renseinger"
+                    nom:str = "non renseigner"
+                    prenom:str = "non renseigner"
+                    second_prenom:str = "non renseigner"
+                    nickname:str = "non renseigner"
+                    organisation:str = "non renseigner"
+                    title:str = "non renseigner"
+                    birthday:str = "non renseigner"
+                    email_home:str = "non renseigner"
+                    email_work:str = "non renseigner"
+                    work_phone:str = "non renseigner"
+                    personal_phone:str = "non renseigner"
+                    adr_home:str = "non renseigner"
+                    adr_work:str = "non renseinger"
 
                 elif((is_opened == True)and not("END:VCARD" in proper_line)):
                     splitter:list = proper_line.split(":")
                     line = splitter[0]
-                    if((line.startswith("N;"))or(line.startswith("N:"))):
+                    if((line.startswith("N;"))or(line == "N")):
                         line = splitter[1]
                         if(";" in line):
                             resplitter:list = line.split(";")
                         else:
                             resplitter:list = line.split(" ")
-                        nom = f"\nnom : {resplitter[0]}"
-                        prenom = f"\nprenom : {resplitter[1]}"
+                        nom = resplitter[0]
+                        prenom = resplitter[1]
                         if(len(resplitter)>3):
-                            second_prenom = f"\nsecond prenom : {resplitter[2]}"
-                            gender = f"\ngender : {resplitter[3]}"
-                        else:
-                            gender = f"\ngender : {resplitter[2]}"
+                            second_prenom = resplitter[2]
                     elif("NICKNAME" in line):
-                        nickname = f"\nnickname : {splitter[1]}"
-                    elif("GENDER" in line):
-                        gender = f"\ngender : {splitter[1]}"
+                        nickname = splitter[1]
                     elif("ORG" in line):
-                        organisation = f"\nentreprise : {splitter[1]}"
+                        organisation = splitter[1]
                     elif("TITLE" in line):
-                        title = f"\nemploi : {splitter[1]}"
+                        title = splitter[1]
                     elif("BDAY" in line):
-                        birthday = f"\ndate de naissance : {splitter[1]}"
+                        birthday = splitter[1]
                     elif("EMAIL" in line):
                         if("HOME" in line):
-                            email_home = f"\nemail perso : {splitter[1]}"
+                            email_home = splitter[1]
                         elif("WORK" in line):
-                            email_work = f"\nemail pro : {splitter[1]}"
+                            email_work = splitter[1]
                     elif("TEL" in line):
                         if("WORK" in line):
-                            work_phone = f"\ntelephone pro : {splitter[1]}"
+                            work_phone = splitter[1]
                         elif(("HOME" in line )or ("CELL" in line)):
-                            personal_phone = f"\ntelephone privee : {splitter[1]}"
+                            personal_phone = splitter[1]
                     elif("ADR" in line):
                         adr = splitter[1]
                         adr = adr.replace(";" , " ")
                         if("HOME" in line):
-                            adr_home = f"\nadresse : {adr}"
+                            adr_home = adr
                         elif("WORK" in line):
-                            adr_work = f"\nlieu de travail : {adr}"
+                            adr_work = adr
+                        else:
+                            adr_home = adr
                 
                 elif("END:VCARD" in proper_line):
                     is_opened = False
-                    element = [nom,prenom,second_prenom,gender,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work]
+                    element = [nom,prenom,second_prenom,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work]
                     res.append(element)
                 else:
                     pass
@@ -421,7 +488,6 @@ class vcf(items):
 
         <div class="vcard">
             <div class="fn">Full name</div>
-            <div class="gender"> gender </div>
             <div class="nickname">nickname</div>
             <div class="org">organisation</div>
             <div class="title">title</div>
@@ -447,14 +513,13 @@ class vcf(items):
                 temp_list:list = []
                 
                 while(i < size):
-                    temp:list = elements[i].split(" : ")
-                    item:str = temp[1]
+                    item:str = elements[i]
                     temp_list.append(item)
                     i += 1
 
 
-                line:str = f"<p>{trait}</p>\n<div class=\"vcard\">\n\t<div class=\"fn\">{temp_list[0]} {temp_list[1]} {temp_list[2]}"
-                line = f"{line}</div>\n\t<div class=\"gender\">{temp_list[3]}</div>\n\t<div class=\"nickname\">{temp_list[4]}</div>"
+                line:str = f"<p class=\"separator\">{trait}</p>\n<div class=\"vcard\">\n\t<div class=\"fn\">{temp_list[0]} {temp_list[1]} {temp_list[2]}"
+                line = f"{line}</div>\n\t<div class=\"nickname\">{temp_list[4]}</div>"
                 line = f"{line}\n\t<div class=\"org\">{temp_list[5]}</div>\n\t<div class=\"title\">{temp_list[6]}</div>"
                 line = f"{line}\n\t<div class=\"bday\">{temp_list[7]}</div>\n\t<div class=\"email_pro\">{temp_list[8]}</div>"
                 line = f"{line}\n\t<div class=\"email_private\">{temp_list[9]}</div>\n\t<div class=\"phone_pro\">{temp_list[10]}</div>"
@@ -473,7 +538,7 @@ class vcf(items):
         """
         Format du csv :
 
-        nom,prenom,second_prenom,gender,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work
+        nom,prenom,second_prenom,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work
         """
 
         file_exist:bool = os.path.exists(file)
@@ -483,7 +548,7 @@ class vcf(items):
             writer = csv.writer(file)
 
             if file_exist == False :
-                header:list = ["nom,prenom,second_prenom,gender,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work"]
+                header:list = ["nom,prenom,second_prenom,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work"]
                 print(header)
                 writer.writerow(header)
 
@@ -492,9 +557,7 @@ class vcf(items):
                 row:list = []
 
                 for items in elements:
-                    splitter:str = items.split(" : ")
-                    obj = splitter[1]
-                    print(obj)
+                    obj = items
                     row.append(obj)
                 writer.writerow(row)
 
@@ -516,3 +579,184 @@ class vcf(items):
 
         with open(file, 'a', encoding='UTF-8') as page:
             page.write(ending)
+
+    ##
+    # Fonction permettant de modifier le contenue d'un fichier vcf
+    def modify_vcf(self,liste:list,liste_replace:list,file:str)->None:
+        
+        size:int = len(liste)
+        i:int = 0
+        for i in range(size):
+            
+            initial:str = liste[i]
+            after:str = liste_replace[i]
+
+            if(initial != after):
+
+                with open(file, 'r',encoding='UTF-8') as file_r:
+                    
+                    data = file_r.readlines()
+
+                    split:list = initial.split(":")
+                    temoi:str = split[0]
+                    init_word:str = split[1]
+                    split_end:list = after.split(":")
+                    temoi_end:str = split_end[0]
+                    end:str = split_end[1]
+
+                    nick_ = False
+                    org_ = False
+                    title_ = False
+                    bday_ = False
+                    pro_mail_ = False
+                    pri_mail_ = False
+                    pro_phone_ = False
+                    pri_phone_ = False
+                    pro_adr_ = False
+                    pri_adr_ = False
+                    for elements in data:
+                        if(elements.startswith("NICKNAME")):
+                            nick_ = True
+                        if(elements.startswith("ORG")):
+                            org_ = True
+                        if(elements.startswith("TITLE")):
+                            title_ = True
+                        if(elements.startswith("BDAY")):
+                            bday_ = True
+                        if(elements.startswith("EMAIL")):
+                            if("WORK" in elements):
+                                pro_mail_ = True
+                            if("HOME" in elements):
+                                pri_mail_ = True
+                        if(elements.startswith("TEL")):
+                            if("WORK" in elements):
+                                pro_phone_ = True
+                            if("HOME" in elements or "CELL" in elements):
+                                pri_phone_ = True
+                        if(elements.startswith("ADR")):
+                            if("WORK" in elements):
+                                pro_adr_ = True
+                            if("HOME" in elements):
+                                pri_adr_ = True
+        
+                    y:int = 0
+                    for y in range(len(data)):
+                        elements = data[y]
+                        if(init_word != end):
+                            if(temoi == "FN"):
+                                if((temoi in elements)or("N:" in elements)or("N;" in elements)):
+                                    data[y] = elements.replace(init_word,end)
+                            if(temoi == "NICKNAME"):
+                                if(temoi in elements):
+                                    data[y] = elements.replace(init_word,end)
+                            if(temoi == "ORG"):
+                                if(temoi in elements):
+                                    data[y] = elements.replace(init_word,end)
+                            if(temoi == "TITLE"):
+                                if(temoi in elements):
+                                    data[y] = elements.replace(init_word,end)
+                            if(temoi == "BDAY"):
+                                if(temoi in elements):
+                                    data[y] = elements.replace(init_word,end)
+                            if(temoi == "EMAIL"):
+                                if(pri_mail_ == True):
+                                    if(temoi in elements):
+                                        if("HOME" in elements and "HOME" in temoi_end):
+                                            data[y] = elements.replace(init_word,end)          
+                                if(pro_mail_ == True):
+                                    if(temoi in elements):
+                                        if("WORK" in elements and "WORK" in temoi_end):
+                                            data[y] = elements.replace(init_word,end)
+                                
+                            if(temoi == "TEL"):
+                                if(pro_phone_ == True):
+                                    if(elements.startswith("TEL")):
+                                        if("WORK" in elements and "WORK" in temoi_end):
+                                            data[y] = elements.replace(init_word,end)
+    
+                                if(pri_phone_ == True):
+                                    if(elements.startswith("TEL")):
+                                        if("HOME" in elements or "CELL" in elements and "HOME" in temoi_end):
+                                            data[y] = elements.replace(init_word,end)
+
+                            if(temoi == "ADR"):
+                                if(pri_adr_ == True):
+                                    if(elements.startswith("ADR")):
+                                        if("HOME" in elements and "HOME" in temoi_end):
+                                            print(f"HOME {elements}")
+                                            data[y] = elements.replace(init_word,end)
+
+                                if(pro_adr_ == True):
+                                    if(elements.startswith("ADR")):
+                                        if(("WORK" in elements) and ("WORK" in temoi_end)):
+                                            print(f"WORK {elements}")
+                                            data[y] = elements.replace(init_word,end)
+                                    
+                        if(nick_ != True):
+                            if(temoi_end == "NICKNAME"):
+                                temp:str = data[-1]
+                                data[-1] = f"NICKNAME;CHARSET=UTF-8:{end}\n"
+                                data.append(temp)
+                                nick_ = True
+                        if(org_ != True):
+                            if(temoi_end == "ORG"):
+                                temp = data[-1]
+                                data[-1] = f"ORG;CHARSET=UTF-8:{end}\n"
+                                data.append(temp)
+                                org_ = True
+                        if(title_ != True):
+                            if(temoi_end == "TITLE"):
+                                temp = data[-1]
+                                data[-1] = f"TITLE;CHARSET=UTF-8:{end}\n"
+                                data.append(temp)
+                                title_ = True
+                        if(bday_ != True):
+                            if(temoi_end == "BDAY"):
+                                temp = data[-1]
+                                data[-1] = f"BDAY:{end}\n"
+                                data.append(temp)
+                                bday_ = True
+                        if(pri_mail_ != True):
+                            if("EMAIL;HOME" in temoi_end):
+                                temp = data[-1]
+                                data[-1] = f"EMAIL;CHARSET=UTF-8;type=HOME:{end}\n"
+                                data.append(temp)
+                                pri_mail_ = True
+                        if(pro_mail_ != True):
+                            if("EMAIL;WORK" in temoi_end):
+                                temp = data[-1]
+                                data[-1] = f"EMAIL;CHARSET=UTF-8;type=WORK:{end}\n"
+                                data.append(temp)
+                                pro_mail_ = True
+                        if(pri_phone_ != True):
+                            if("TEL;HOME" in temoi_end):
+                                temp = data[-1]
+                                data[-1] = f"TEL;TYPE=CELL:{end}\n"
+                                data.append(temp)
+                                pri_phone_ = True
+                        if(pro_phone_ != True):
+                            if("TEL;WORK" in temoi_end):
+                                temp = data[-1]
+                                data[-1] = f"TEL;TYPE=WORK:{end}\n"
+                                data.append(temp)
+                                pro_phone_ = True
+                        if(pri_adr_ != True):
+                            if("ADR;HOME" in temoi_end):
+                                temp = data[-1]
+                                data[-1] = f"ADR;CHARSET=UTF-8;TYPE=HOME:{end}\n"
+                                data.append(temp)
+                                pri_adr_ = True
+                        if(pro_adr_ != True):
+                            if("ADR;WORK" in temoi_end):
+                                print(end)
+                                print(temoi_end)
+                                temp = data[-1]
+                                data[-1] = f"ADR;CHARSET=UTF-8;TYPE=WORK:{end}\n"
+                                data.append(temp)
+                                pro_adr_ = True
+
+
+                with open(file, 'w', encoding='UTF-8') as file_w:
+
+                    file_w.write("".join(str(item) for item in data))
+     
