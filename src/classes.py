@@ -1,6 +1,6 @@
 """!
 
-    Ce premier fichier contient les classes permettant le traitement des informations et des fichiers ics et vcf
+    Ce programme contient 
 
     @author VOLQUARDSEN Alex
     @since 13/11/2022
@@ -13,10 +13,6 @@
 
 import sys
 import os
-from icalendar import Calendar, Event, vCalAddress, vText
-from datetime import datetime
-from pathlib import Path
-import pytz
 import csv
 
 
@@ -25,20 +21,20 @@ import csv
 
 ## CONSTANTES ##
 
-ARG_LEN = len(sys.argv)
+# Taille pour effectuer des lignes dans les affichages terminale
 LINE = 70
 
 ## VARIABLES GLOBAL ##
 
+# variable utiliser pour déterminer l'étage initiale lors de la recherche dans des répertoire
 etage_actuel:bool = True
 
-## CLASSE ##
-
+## CLASSES ##
 
 ##
-# Classe contenant les opérations à effectuer sur les fichiers ics
+# Classe contenant les opérations de base à effectuer sur les fichiers
 #
-# @version 1.0.2
+# @version 1.2.1
 # @since 13/11/2022
 class items:
 
@@ -72,7 +68,9 @@ class items:
 
         # Affiche le répertoire initial 
         if(etage == 0):
+            # on augmente la "tabulation" lorsque l'on rentre dans un nouveau répertoire et inversement
             tab:str = " " * etage
+            # on affiche le nom du répertoire et on met en forme la recherche
             print(f"\u001b[37m {tab}{directory}")
             print(f"{tab}|")
             print(f"{tab}->")
@@ -80,16 +78,15 @@ class items:
         # on traverse l'ensemble des éléments du répertoire courant
         for file in os.listdir(directory):
 
-            f = file
+            f = file # le fichier courament tester dans la boucle
 
             # si l'élément courant est un fichier 
             if("." in f):
-
                 # et que ce fichier est de l'extension voulu
                 if((".vcf" in f ) or (".ics" in f)):
-
                     # affiche le répertoire courant du fichier
                     if(etage_actuel == False):
+                        # on met en forme l'affichage
                         tab:str = " " * etage
                         print(f"\u001b[37m {tab}{directory}")
                         print(f"{tab}|")
@@ -100,9 +97,10 @@ class items:
                     print(f"\u001b[31m {tab_file}|- {f}\u001b[37m \n")
             # Si l'élément ne possède pas de "." c'est forcément un répertoire, dans ce cas
             elif(not(f.startswith(".")) or not(f.startswith("__"))):
-                temp_dir:str = directory + f"\{f}"
+                temp_dir:str = directory + f"/{f}"
                 # appel récursivement la fonction pour traverser ce répertoire à la recherche de fichier
                 etage_actuel = False
+                # on appel la fonction récursivement pour continuer le listage des fichiers
                 self.list_files(temp_dir,etage+1)
                 continue
 
@@ -111,9 +109,12 @@ class items:
     # @param liste : la liste des elements à afficher
     def afficher(self,liste:list)->None:
 
+        # on créer une ligne pour rendre l'affichage plus lisible
         line:str = "-" * LINE
 
+        # si la taille de la liste est 5, c'est que nous avons un fichier ics
         if(len(liste[0]) == 5):
+            # on affiche les élements contenue dans la liste
             for elements in liste:
                 print(line)
 
@@ -123,10 +124,12 @@ class items:
                 print(f"|  location : {elements[3]}")
                 print(f"|  description : {elements[4]}")
 
-
                 print(line)
+
+        # si la liste est de taille 13, nous avons donc un fichier vcf a afficher
         elif(len(liste[0]) == 13):
 
+            # encore une fois nous affichons les données de façon structuré
             for elements in liste:
 
                 print(line)
@@ -155,9 +158,15 @@ class items:
                     ********** PARTIE ICS ***********
                     *********************************    
     """
-
+##
+# Classe contenant les opérations à effectuer sur les fichiers ics
+#
+# @version 1.1.9
+# @since 13/11/2022
 class ics(items):
 
+    ##
+    # fonction d'initialisation de la classe ics
     def __init__(self, file_path):
         super().__init__(file_path)
 
@@ -166,53 +175,91 @@ class ics(items):
     # @param path : le fichier que l'on souhaite afficher
     def get_content_ics(self,path:str)->list:
 
+        # liste des élements d'un évenement 
         element:list = []
+        # liste contenant les listes des autres éléments
         res:list = []
 
+        # on affiche un message pour montrer que l'on traite le fichier
         print(f"reading {path}\n")
-        opened:bool = False
+        # on regarde si on entre dans un evenement
+        is_opened:bool = False
+        # Comme dans un calendar on peut tomber plusieurs fois sur le terme "BEGIN" on s'assure que c'est bien au bon endroit que l'on cherche
+        danger:bool = False
+        with open(path, 'rb') as file:
+            # on inspecte chaque ligne du fichier
+            for lines in file:
 
-        with open(path, 'rb') as cal:
-            ecal = Calendar.from_ical(cal.read())
-            for component in ecal.walk():
+                # on décode chaque lignes en utf-8
+                decoded = lines.decode('utf-8')
+                ini_split = decoded.split("\r")
+                proper_line = ini_split[0]
 
-                event:str = component.name
-                if( (event == "VEVENT") and (opened == False)):
-                    opened = True
-                    summary:str = component.get("SUMMARY")
-                    start:str = component.decoded("DTSTART")
-                    if("+" in str(start)):
-                        list_s = str(start).split("+")
-                        start = list_s[0] 
-                    start = start                     
-                    end:str = component.decoded("DTEND")
-                    if("+" in str(end)):
-                        list_e = str(end).split("+")
-                        end = list_e[0]  
-                    end = end
-                    if(component.get("LOCATION") != ""):
-                        location:str = component.get("LOCATION")
-                    else:
-                        location:str = "Not specified"
-                    if(component.get("DESCRIPTION") != ""):
-                        descritpion:str = component.get("DESCRIPTION")
-                    else:
-                        descritpion:str = "No description specified"
+                # Lorsque l'on trouve un début d'evenement
+                if('BEGIN:VEVENT' in proper_line):
+                    # on considere que l'on rentre dans l'évenement
+                    is_opened = True
+                    # on initialise les valeurs pour s'assurer qu'aucunes d'entre elle ne soit null
+                    summary:str = "Non renseigner"
+                    start:str = "Non renseigner"
+                    end:str = "Non renseigner"
+                    location:str = "Non renseigner"
+                    descritpion:str = "Non renseigner"
 
-                is_ended:str = component.name
-                if((is_ended == "VEVENT") and (opened == True)):
-                    opened = False 
+                # si nous somme considéré dans l'évenement mais que nous trouvons un autre BEGIN
+                elif((is_opened == True) and("BEGIN" in proper_line)):
+                    # nous passons danger à vrai
+                    danger = True
+                # si danger est vrai et que nous trouvons un END 
+                elif((danger == True) and ("END" in proper_line)):
+                    # nous repassons danger à faux
+                    danger = False
+
+                # si nous somme dans l'évenement et que la ligne n'est pas une fin d'évenement et que danger est faux
+                elif((is_opened == True)and not("END:VEVENT" in proper_line) and (danger == False)):
+                    # on sépare la ligne en deux via le charactère ":" forcément présent
+                    splitter:list = proper_line.split(":")
+                    # on récupère la première partie de la ligne
+                    line = splitter[0]
+                    
+                    # Si la ligne contient "DTSTART"
+                    if("DTSTART" in line):
+                        # on sépare la chaine de charactere si elle peut l'être
+                        resplitter = splitter[1].split("T")
+                        start = ""
+                        # on met en forme la date de début de l'evenement
+                        for i in range(len(resplitter[0])):
+                            if(i == 4 or i == 6):
+                                start = start + "/" + resplitter[0][i]
+                            else:
+                                start = start + resplitter[0][i]
+                    # si la ligne contient "DTEND"
+                    elif("DTEND" in line):
+                        resplitter = splitter[1].split("T")
+                        end = ""
+                        # on met en forme la date de fin de l'evenement
+                        for i in range(len(resplitter[0])):
+                            if(i == 4 or i == 6):
+                                end = end + "/" + resplitter[0][i]
+                            else:
+                                end = end + resplitter[0][i]
+                    # on associe les valeurs aux variables corrrespondantes
+                    elif("SUMMARY" in line):
+                        summary = splitter[1]
+                    elif("DESCRIPTION" in line):
+                        descritpion = splitter[1]
+                    elif("LOCATION" in line):
+                        location = splitter[1]
+                    
+                # si nous reperons la fin de l'evenement, nous ajoutons les valeurs dans une liste et nous "fermons" l'evenement
+                elif("END:VEVENT" in proper_line):
+                    is_opened = False
                     element = [summary,start,end,location,descritpion]
                     res.append(element)
-
-                elif(is_ended != "VEVENT"):
-                    pass 
                 else:
-                    print("\u001b[31m Erreur ! Votre fichier contient surement une erreur \u001b[37m")
-                    exit
-
+                    pass
         return res
-
+    
     ##
     # Fonction permettant de créer un fragment HTML contenant les VEVENT d'un fichier ics et les écrit dans un fichier
     # @param liste : l'ensemble des éléments des VEVENT
@@ -230,15 +277,17 @@ class ics(items):
         </div>
         """
         
+        # nous ouvrons le fichier de sorte à ajouter des éléments au fichier existant ou créant un fichier s'il n'existe pas
         with open(file, 'a+', encoding='utf-8') as frag:
             
             i:int = 0
             trait:str = "-" * 40
 
+            # nous traversons la liste des listes d'éléments
             for elements in liste:
-                
+                # nous traversons la liste d'éléments courantes
                 for items in elements :
-                    
+                    # nous écrivons dans ce fichier le fragment html
                     match i :
                         case 0:
                             line:str = f"<p class=\"separator\">{trait}<p>"
@@ -274,17 +323,20 @@ class ics(items):
         summary,start,end,location,description
         """
 
+        # nous verifions si le fichier existe
         file_exist:bool = os.path.exists(file)
 
+        # nous ouvrons le fichier 
         with open(file, 'a+', encoding='UTF-8', newline='') as file:
 
+            # on créer un objet pour écrire dans un fichier csv
             writer = csv.writer(file)
 
+            # si le fichier n'existe pas à la base, nous écrivons une en-tête au fichier CSV
             if file_exist == False :
                 header:list = ["summary","start","end","location","description"]
-                print(header)
                 writer.writerow(header)
-
+            # nous ajoutons les éléments dans le CSV
             for elements in liste:
 
                 row:list = []
@@ -301,9 +353,11 @@ class ics(items):
     # @param file : la page qui sera créer
     def page_ics(self,liste:list,file:str)->None:
 
+        # en-tête et pied-de-page du squelette de page html
         heading:str = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n\t<meta charset=\"utf-8\">\n\t<title>évenements de votre calendrier</title>\n</head>\n<body>"
         ending:str = "</body>\n</html>"
 
+        # nous ouvrons le fichier et nous ajoutons en-tête, bas de page et les fragments html 
         with open(file, 'a+', encoding='UTF-8') as page:
 
             page.write(heading)
@@ -318,22 +372,25 @@ class ics(items):
     # Fonction permettant de modifier le contenue d'un fichier ics
     def modify_ics(self,liste:list,liste_replace:list,file:str,index:int)->None:
         
+        # on récupere la taille de la liste
         size:int = len(liste)
         i:int = 0
-        place:int = 0
         opened:bool = False
 
+        # on traverse l'ensemble des élements de la liste
         for i in range(size):
-            
+            # on récupère l'élément courant de chaque liste
             initial:str = liste[i]
             after:str = liste_replace[i]
-
+            place:int = 0
+            # si les éléments des deux listes sont les même on ne  change rien
             if(initial != after):
 
+                # sinon on ouvre le fichier en mode lecture
                 with open(file, 'r',encoding='UTF-8') as file_r:
-                    
+                    # on va récupérer sous forme de liste l'ensembe des lignes du fichier
                     data = file_r.readlines()
-
+                    # on récupère les informations qui nous intéresse 
                     split:list = initial.split(":")
                     temoi:str = split[0]
                     init_word:str = split[1]
@@ -342,8 +399,10 @@ class ics(items):
                     end:str = split_end[1]
                                                 
                     y:int = 0
+                    # on traverse les élements de la liste
                     for y in range(len(data)):
                         elements = data[y]
+                        # on va vérifier les élements et modifier en fonction de l'élément courant de la liste
                         if(elements.startswith("BEGIN:VEVENT")):
                             place += 1
                             opened = True
@@ -351,13 +410,27 @@ class ics(items):
                             opened = False
                         if((place == index)and(opened == True)):
                             if(init_word != end):
-                                if(elements.startswith(temoi)):
+                                 # on annule la mise ne forme de la date précedemment effectuer
+                                if("DTSTART" in temoi):
+                                    if(elements.startswith("DTSTART")):
+                                        split = end.split("/")
+                                        end1 = split[0]
+                                        end2 = split[1]
+                                        end3 = split[2]
+                                        data[y] = f"{temoi_end}:{end1}{end2}{end3}\n"
+                                if("DTEND" in temoi):
+                                    if(elements.startswith("DTEND")):
+                                        split = end.split("/")
+                                        end1 = split[0]
+                                        end2 = split[1]
+                                        end3 = split[2]
+                                        data[y] = f"{temoi_end}:{end1}{end2}{end3}\n"
+                                elif(elements.startswith(temoi)):
                                     if(init_word == "Not specified"):
                                         data[y] = f"{temoi_end}:{end}\n"
                                     else:
                                         data[y] = elements.replace(init_word,end)
-
-
+                # on réouvre le fichier en mode ecriture pour prendre en compte les modifications
                 with open(file, 'w', encoding='UTF-8') as file_w:
 
                     file_w.write("".join(str(item) for item in data))
@@ -368,9 +441,16 @@ class ics(items):
                     *********************************    
     """
 
-
+##
+# Classe contenant les opérations à effectuer sur les fichiers vcf
+#
+# @version 1.1.9
+# @since 13/11/2022
 class vcf(items):
 
+    ##
+    # fonction d'initialisation de la classe
+    # @param file_path : le chemin du fichier
     def __init__(self, file_path):
         super().__init__(file_path)
 
@@ -397,21 +477,24 @@ class vcf(items):
         ADR : work adress       
         """
 
+        # on créer une liste qui contiendras des éléments et une liste qui contiendras cest listes
         element:list = []
         res:list = []
 
         is_opened:bool = False
-
+        # on affiche un message pour informer que l'on traite le fichier
         print(f" reading : {path}\n")
 
+        # on ouvre le fichier pour le lire
         with open(path, 'rb') as file:
-            
+            # on regarde les lignes du fichier une par une
             for lines in file:
-
+                # on decode ces lignes en utf-8
                 decoded = lines.decode('utf-8')
                 ini_split = decoded.split("\r")
                 proper_line = ini_split[0]
                 
+                # si on remarque l'ouverture d'une carte, on initialise les variables
                 if('BEGIN:VCARD' in proper_line):
                     is_opened = True
                     nom:str = "non renseigner"
@@ -428,9 +511,11 @@ class vcf(items):
                     adr_home:str = "non renseigner"
                     adr_work:str = "non renseinger"
 
+                # si on est dans la carte et que la ligne n'est pas la fin de la carte on traite les informations
                 elif((is_opened == True)and not("END:VCARD" in proper_line)):
                     splitter:list = proper_line.split(":")
                     line = splitter[0]
+                    # si jamais on tombe sur un N; ou un N: on sépare les informations de façon précise correspondant à la mise en forme du fichier
                     if((line.startswith("N;"))or(line == "N")):
                         line = splitter[1]
                         if(";" in line):
@@ -468,11 +553,12 @@ class vcf(items):
                             adr_work = adr
                         else:
                             adr_home = adr
-                
+                # si on repere la fin d'une carte ou met les informations dan une liste et on met cette liste dans une liste
                 elif("END:VCARD" in proper_line):
                     is_opened = False
                     element = [nom,prenom,second_prenom,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work]
                     res.append(element)
+                # si la ligne ne compte pas d'élément interessant, on passe à la prochaine
                 else:
                     pass
         return res
@@ -500,31 +586,30 @@ class vcf(items):
             <div class="adr_private>adresse</div>
         </div>
         """
-        
+        # on ouvre le fichier ou on le créer
         with open(file, 'a+', encoding='utf-8') as frag:
             
             trait:str = "-" * 40
 
-
+            # on traverse les éléments de la liste 
             for elements in liste:
-
                 i:int = 0
                 size:int = len(elements)
                 temp_list:list = []
-                
+                # on ajoute les elements dans une liste
                 while(i < size):
                     item:str = elements[i]
                     temp_list.append(item)
                     i += 1
 
-
+                # on créer le fragment html puis on l'écrit dans le fichier
                 line:str = f"<p class=\"separator\">{trait}</p>\n<div class=\"vcard\">\n\t<div class=\"fn\">{temp_list[0]} {temp_list[1]} {temp_list[2]}"
-                line = f"{line}</div>\n\t<div class=\"nickname\">{temp_list[4]}</div>"
-                line = f"{line}\n\t<div class=\"org\">{temp_list[5]}</div>\n\t<div class=\"title\">{temp_list[6]}</div>"
-                line = f"{line}\n\t<div class=\"bday\">{temp_list[7]}</div>\n\t<div class=\"email_pro\">{temp_list[8]}</div>"
-                line = f"{line}\n\t<div class=\"email_private\">{temp_list[9]}</div>\n\t<div class=\"phone_pro\">{temp_list[10]}</div>"
-                line = f"{line}\n\t<div class=\"phone_private\">{temp_list[11]}</div>\n\t<div class=\"adr_pro\">{temp_list[12]}</div>"
-                line = f"{line}\n\t<div class=\"adr_private\">{temp_list[13]}</div>\n</div>"
+                line = f"{line}</div>\n\t<div class=\"nickname\">{temp_list[3]}</div>"
+                line = f"{line}\n\t<div class=\"org\">{temp_list[4]}</div>\n\t<div class=\"title\">{temp_list[5]}</div>"
+                line = f"{line}\n\t<div class=\"bday\">{temp_list[6]}</div>\n\t<div class=\"email_pro\">{temp_list[7]}</div>"
+                line = f"{line}\n\t<div class=\"email_private\">{temp_list[8]}</div>\n\t<div class=\"phone_pro\">{temp_list[9]}</div>"
+                line = f"{line}\n\t<div class=\"phone_private\">{temp_list[10]}</div>\n\t<div class=\"adr_pro\">{temp_list[11]}</div>"
+                line = f"{line}\n\t<div class=\"adr_private\">{temp_list[12]}</div>\n</div>"
                 
                 frag.write(line)
             
@@ -541,17 +626,18 @@ class vcf(items):
         nom,prenom,second_prenom,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work
         """
 
+        # on vérifie si le fichier existe déjà
         file_exist:bool = os.path.exists(file)
 
+        # ouvre le fichier ou le créer si jamais il n'existe pas
         with open(file, 'a+', encoding='UTF-8', newline='') as file:
 
             writer = csv.writer(file)
-
+            # si le fichier n'existais pas, nous ajoutons l'en-tête au fichier
             if file_exist == False :
                 header:list = ["nom,prenom,second_prenom,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work"]
-                print(header)
                 writer.writerow(header)
-
+            # on ajoute les elements de la liste au fichier
             for elements in liste:
 
                 row:list = []
@@ -570,7 +656,7 @@ class vcf(items):
 
         heading:str = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n\t<meta charset=\"utf-8\">\n\t<title>évenements de votre calendrier</title>\n</head>\n<body>"
         ending:str = "</body>\n</html>"
-
+        # même principe que pour les fichiers ics, nous créons un squelette de page html contenant les fragments de carte
         with open(file, 'a+', encoding='UTF-8') as page:
 
             page.write(heading)
@@ -582,19 +668,24 @@ class vcf(items):
 
     ##
     # Fonction permettant de modifier le contenue d'un fichier vcf
+    # @param liste : liste des éléments à remplacer
+    # @param liste_replace : liste des éléments de remplacement
+    # @param file : le fichier dans lequel on applique les modifications
     def modify_vcf(self,liste:list,liste_replace:list,file:str)->None:
         
         size:int = len(liste)
         i:int = 0
+        # on traverse les listes à la recherche des éléments à modifier
         for i in range(size):
             
             initial:str = liste[i]
             after:str = liste_replace[i]
-
+            # si les éléments sont identique on ne fait rien sinon on agis sur la liste
             if(initial != after):
-
+                # on ouvre le fichier en lecture
                 with open(file, 'r',encoding='UTF-8') as file_r:
                     
+                    # on récupère chaque ligne dans une liste 
                     data = file_r.readlines()
 
                     split:list = initial.split(":")
@@ -603,7 +694,7 @@ class vcf(items):
                     split_end:list = after.split(":")
                     temoi_end:str = split_end[0]
                     end:str = split_end[1]
-
+                    # Comme certains éléments peuvent ne pas être présent dans une carte, on vérifie s'ils sont présent
                     nick_ = False
                     org_ = False
                     title_ = False
@@ -639,6 +730,7 @@ class vcf(items):
                             if("HOME" in elements):
                                 pri_adr_ = True
         
+                    # une fois la vérification faite, si l'élément existe, nous le modifions
                     y:int = 0
                     for y in range(len(data)):
                         elements = data[y]
@@ -662,6 +754,7 @@ class vcf(items):
                                 if(pri_mail_ == True):
                                     if(temoi in elements):
                                         if("HOME" in elements and "HOME" in temoi_end):
+                                            print("home reperé")
                                             data[y] = elements.replace(init_word,end)          
                                 if(pro_mail_ == True):
                                     if(temoi in elements):
@@ -680,6 +773,9 @@ class vcf(items):
                                             data[y] = elements.replace(init_word,end)
 
                             if(temoi == "ADR"):
+                                split = elements.split(":")
+                                mod = split[1].replace(";"," ")
+                                elements = f"{split[0]}:{mod}"
                                 if(pri_adr_ == True):
                                     if(elements.startswith("ADR")):
                                         if("HOME" in elements and "HOME" in temoi_end):
@@ -691,7 +787,7 @@ class vcf(items):
                                         if(("WORK" in elements) and ("WORK" in temoi_end)):
                                             print(f"WORK {elements}")
                                             data[y] = elements.replace(init_word,end)
-                                    
+                        # si l'élément n'existe pas, on le créer 
                         if(nick_ != True):
                             if(temoi_end == "NICKNAME"):
                                 temp:str = data[-1]
