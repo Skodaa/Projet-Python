@@ -851,7 +851,7 @@ class vcf(items):
                                 data.append(temp)
                                 pro_adr_ = True
 
-
+                # on ouvre de nouveau le fichier pour écrire cette fois
                 with open(file, 'w', encoding='UTF-8') as file_w:
 
                     file_w.write("".join(str(item) for item in data))
