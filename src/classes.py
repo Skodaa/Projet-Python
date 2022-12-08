@@ -370,6 +370,10 @@ class ics(items):
 
     ##
     # Fonction permettant de modifier le contenue d'un fichier ics
+    # @param liste : liste contenant les éléments avant modification
+    # @param liste_replace : liste contenant les éléments modifiés par l'utilisateur
+    # @param file : le fichier dans lequel on va enregistrer les modifications 
+    # @param index : l'index de l'évenement à modifié pour ne pas modifié inutilement d'autres éléments
     def modify_ics(self,liste:list,liste_replace:list,file:str,index:int)->None:
         
         # on récupere la taille de la liste
