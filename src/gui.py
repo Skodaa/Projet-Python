@@ -150,7 +150,7 @@ class show_window(tk.Frame):
             self.end_lbl.grid(sticky=W,column=1,row=5)
 
             # création du bouton pour actualisé les inforation de la fenêtre
-            self.see_button = ttk.Button(self.content_frame,padding=10,text="Actualiser", command=self.create_show).grid(columnspan=2,column=0,row=20)
+            self.see_button = ttk.Button(self.content_frame,padding=10,text="Actualiser", command=self.create_show).grid(columnspan=2,column=1,row=21)
         
         # si le fichier est un vcf on créer la fenêtre en conséquence 
         elif(path.endswith(".vcf")):
@@ -183,8 +183,12 @@ class show_window(tk.Frame):
             self.adr_pri_lbl = ttk.Label(self.content_frame,padding=5)
             self.adr_pri_lbl.grid(sticky=W,column=0,row=12,padx=10)
 
+        # Bouton pour créer un fragment html via les ressources
+        self.html = ttk.Button(self.content_frame, text="HTML", padding=10, command=self.create_html).grid(columnspan=2,column=0,row=21)
+        # Bouton pour créer un fichier csv via les ressources
+        self.csv = ttk.Button(self.content_frame, text="CSV", padding=10, command=self.create_csv).grid(columnspan=2,column=0,row=22)
         # création du bouton pour quitter la fenêtre ( présent quelque soit le type du fichier)
-        self.quit_show = ttk.Button(self.content_frame, text="Retour",padding=10, command=self.show_win.destroy).grid(columnspan=2,column=0,row=21)
+        self.quit_show = ttk.Button(self.content_frame, text="Retour",padding=10, command=self.show_win.destroy).grid(columnspan=2,column=1,row=22)
 
         # appel de la fonction de création de la fenêtre d'affichage
         self.create_show()
@@ -198,16 +202,16 @@ class show_window(tk.Frame):
             item = ics(self.path)
 
             # on récupère le contenue du fichier à l'aide d'une fonction de la classe ics
-            content = item.get_content_ics(self.path)
+            self.content = item.get_content_ics(self.path)
             # on récupère la taille de ce contenue
-            size = len(content)
+            size = len(self.content)
 
             # on attribue aux éléments les informations de l'évenement sélectionné
-            summary = content[self.selected][0]
-            start = content[self.selected][1]
-            end = content[self.selected][2]
-            location = content[self.selected][3]
-            description = content[self.selected][4]
+            summary = self.content[self.selected][0]
+            start = self.content[self.selected][1]
+            end = self.content[self.selected][2]
+            location = self.content[self.selected][3]
+            description = self.content[self.selected][4]
 
             
             i:int = 0
@@ -241,10 +245,10 @@ class show_window(tk.Frame):
             item = vcf(self.path)
 
             # on récupère le contenue du fichier
-            content = item.get_content_vcf(self.path)
+            self.content = item.get_content_vcf(self.path)
             
             # on attribue les éléments du fichier a des variables
-            for elements in content:
+            for elements in self.content:
 
                 nom = elements[0]
                 prenom = elements[1]
@@ -259,6 +263,7 @@ class show_window(tk.Frame):
                 pri_phone = elements[10]
                 pri_adr = elements[11]
                 pro_adr = elements[12]
+
 
             # on modifie le contenue des label pour afficher le contenue du fichier
             self.nom_lbl.configure(text=f"Nom : {nom}")
@@ -282,10 +287,42 @@ class show_window(tk.Frame):
 
     ##
     # Change la valeur de selection de la combobox
+    # @param la combobox contenant la valeur sélectionné
     def set_selected(self,combox)->None:
 
         # on modifie la valeur de l'attribut selected de la classe
         self.selected = int(combox.get())
+
+
+    ##
+    # Fonction créant un fragment html pour le fichier ouvert
+    def create_html(self):
+        # on vérifie d'abord le type du fichier
+        if(self.path.endswith(".ics")):
+            # on créer l'objet ics
+            item = ics(self.path)
+            # on appel la méthode de creation html de la classe ics
+            item.fragment_ics(self.content,"event.html")
+        else:
+            # on créer l'objet vcf
+            item = vcf(self.path)
+            # on appel la méthode de creation html de vcf
+            item.fragment_vcf(self.content,"vcard.html")
+        
+    ##
+    # Fonction créant un fichier csv avec le contenue du fichier
+    def create_csv(self):
+        # on vérifie d'abord le type du fichier
+        if(self.path.endswith(".ics")):
+            # on créer l'objet ics
+            item = ics(self.path)
+            # on appel la méthode de creation csv de la classe ics
+            item.csv_ics(self.content,"event.csv")
+        else:
+            # on créer l'objet vcf
+            item = vcf(self.path)
+            # on appel la méthode de creation csv de vcf
+            item.csv_vcf(self.content,"vcard.csv")
 
 
 ##--------------------------------------##
