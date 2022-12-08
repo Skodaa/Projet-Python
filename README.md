@@ -9,10 +9,42 @@ Le but de ce projet est de créer un programme permettant d'afficher les informa
 
 ## Prérequis
 
-Pour utiliser ce programme, vous devrez disposerde différentes bibliothèques externes en plus des fonctions de bases intégrer à python.
+Pour utiliser ce programme, vous ddevez disposer de python3.10 au minimum. Pour vous assurer que votre version est correcte vous pouvez utiliser la commande :
 
-vous devrez installer la bibliothèque icalendar, pour ce faire il suffiras de taper :
+sous windows powershell :
+        
+    python --version
 
-    pip install icalendar
+sous linux :
+    
+    python3 --version
 
-vous pouvez retrouver par ailleur la documentation de cette bibliothèque ici : <https://icalendar.readthedocs.io/en/latest/>
+si votre version est inferieur à 3.10 vous devrez la mettre à niveau. Vous pouvez le faire en téléchargeant une version plus récente ici :  <https://www.python.org/downloads/>
+
+## Utilisation :
+
+Vous disposerez de différents moyens d'utiliser le programme, vous pourrez l'utiliser en mode console (CLI) ou à l'aide d'une interface graphique (GUI)
+pour utiliser ce programme en mode console, vous devrez commencé votre ligne soit par **python3** sous linux soit par **python** sous windows powershell (je ne possède pas de mac alors je ne sais pas comment le faire sur MacOs déso)
+
+### Utilisation en mode console :
+
+Pour utilise ce programme vous pourrez afficher les diffrentes commandes possible à l'aide de cette commande :
+
+    python cli.py -h
+
+Le programme vous permettras d'afficher des fichier d'extension *.cli* et *.vcf* de façon structuré afin de permettre une meilleure lecture des informations. Vous pourrez aussi à l'aide de l'utilisation de la version ligne de commande créer des fragments html des fichier et d'ajouter ou de créer un fichier csv contenant les informations contenue dans des fichier *.cli* et *.vcf*
+
+**/!\ si vous souhaiter créer un fichier csv ou un fragment html vous devrez vous assurer que l'extension de ces fichier est bien la bonne sinon une erreur sera retourner.**
+
+Enfin vous pourrez créer un squelette de page html contenant des fragments de code html avec les informations contenue dans votre fichier.
+
+### Utilisation en mode graphique :
+
+Pour utiliser le mode graphique vous pouvez soit lancer directement le fichier **gui.py** avec python ou alors rentrer la commande suivante dans votre terminal :
+
+    python gui.py
+
+Depuis cette interface graphique, vous pourrez séléctionner un fichier de type *ics* ou *vcf* et à l'aide d'un bouton en afficher le contenue principal, dans la fenêtre d'affichage il vous seras aussi possible de créer un fragment html ou d'ajouter les informations dans un fichier csv.
+
+Vous pourrez de plus modifié le contenue principal du fichier séléctionné à l'aide de la fenêtre d'édition ( noter que ces modifications ce font sur le fichier initial)
+
