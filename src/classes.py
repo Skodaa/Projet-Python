@@ -1,6 +1,7 @@
 """!
 
-    Ce programme contient 
+    Ce programme contient l'ensemble des classes utiles pour travailler sur les fichiers ics et vcf ainsi que la classe permettant d'afficher les informations
+    utiles dpour l'utilisation du CLI.
 
     @author VOLQUARDSEN Alex
     @since 13/11/2022
@@ -322,9 +323,17 @@ class ics(items):
 
         summary,start,end,location,description
         """
-
         # nous verifions si le fichier existe
         file_exist:bool = os.path.exists(file)
+        header = "summary,start,end,location,description"
+
+        if(file_exist == True):
+            with open(file, 'r', encoding='UTF-8') as file_read:
+            
+                lines = file_read.readlines()
+                print(lines)
+
+
 
         # nous ouvrons le fichier 
         with open(file, 'a+', encoding='UTF-8', newline='') as file:
@@ -332,11 +341,17 @@ class ics(items):
             # on créer un objet pour écrire dans un fichier csv
             writer = csv.writer(file)
 
+
             # si le fichier n'existe pas à la base, nous écrivons une en-tête au fichier CSV
             if file_exist == False :
                 header:list = ["summary","start","end","location","description"]
                 writer.writerow(header)
             # nous ajoutons les éléments dans le CSV
+            else:
+                if(header != lines[0]):
+                    print("Erreur fichier incorrect")
+                    return
+                
             for elements in liste:
 
                 row:list = []
@@ -632,15 +647,30 @@ class vcf(items):
 
         # on vérifie si le fichier existe déjà
         file_exist:bool = os.path.exists(file)
+        header = "nom,prenom,second_prenom,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work"
+        
+        
+        if(file_exist == True):
+            with open(file, 'r', encoding='UTF-8') as file_read:
+            
+                lines = file_read.readlines()
+                head = lines[0]
+                split = head.split("\n")
+                head = split[0]
 
+                
         # ouvre le fichier ou le créer si jamais il n'existe pas
         with open(file, 'a+', encoding='UTF-8', newline='') as file:
 
             writer = csv.writer(file)
             # si le fichier n'existais pas, nous ajoutons l'en-tête au fichier
             if file_exist == False :
-                header:list = ["nom,prenom,second_prenom,nickname,organisation,title,birthday,email_home,email_work,work_phone,personal_phone,adr_home,adr_work"]
+                header:list = ["nom","prenom","second_prenom","nickname","organisation","title","birthday","email_home","email_work","work_phone","personal_phone","adr_home","adr_work"]
                 writer.writerow(header)
+            else:
+                if(header != head):
+                    print("Erreur fichier incorrect")
+                    return
             # on ajoute les elements de la liste au fichier
             for elements in liste:
 
@@ -653,12 +683,12 @@ class vcf(items):
 
 
     ##
-    # Fonction qui va créer un squelette de page html contenant les fragments html des évenements
+    # Fonction qui va créer un squelette de page html contenant les fragments html des vcard
     # @param liste : liste des éléments contenue dans les évenements
     # @param file : la page qui sera créer
     def page_vcf(self,liste:list,file:str)->None:
 
-        heading:str = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n\t<meta charset=\"utf-8\">\n\t<title>évenements de votre calendrier</title>\n</head>\n<body>"
+        heading:str = "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n\t<meta charset=\"utf-8\">\n\t<title>Informations de vos cartes</title>\n</head>\n<body>"
         ending:str = "</body>\n</html>"
         # même principe que pour les fichiers ics, nous créons un squelette de page html contenant les fragments de carte
         with open(file, 'a+', encoding='UTF-8') as page:
